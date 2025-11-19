@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cờ Tướng - Chiếu Lại</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+        }
+        
+        h1 {
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .board {
+            display: grid;
+            grid-template-columns: repeat(9, 50px);
+            grid-template-rows: repeat(10, 50px);
+            gap: 0;
+            background: #f4e4c1;
+            border: 4px solid #8b4513;
+            position: relative;
+            padding: 10px;
+        }
+        
+        .cell {
+            width: 50px;
+            height: 50px;
+            border: 1px solid #999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .piece {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            border: 3px solid;
+            transition: all 0.3s ease;
+        }
+        
+        .piece.red {
+            background: radial-gradient(circle at 30% 30%, #ff6b6b, #c92a2a);
+            color: white;
+            border-color: #8b0000;
+        }
+        
+        .piece.black {
+            background: radial-gradient(circle at 30% 30%, #4a4a4a, #1a1a1a);
+            color: white;
+            border-color: #000;
+        }
+        
+        .piece:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        
+        .river {
+            grid-column: 1 / -1;
+            grid-row: 5 / 6;
+            background: linear-gradient(to bottom, #f4e4c1 45%, #87ceeb 45%, #87ceeb 55%, #f4e4c1 55%);
+            border-top: 2px solid #666;
+            border-bottom: 2px solid #666;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .info {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 18px;
+            color: #333;
+            font-weight: bold;
+        }
+        
+        .move-display {
+            color: #667eea;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎮 Cờ Tướng - Chiếu Lại Ván Đấu 🎮</h1>
+    
+    <div class="container">
+        <div id="board" class="board"></div>
+        
+        <div class="controls">
+            <button onclick="resetGame()">🔄 Đặt Lại</button>
+            <button id="prevBtn" onclick="previousMove()" disabled>⏮️ Lùi</button>
+            <button id="nextBtn" onclick="nextMove()">⏭️ Tiến</button>
+            <button id="playBtn" onclick="toggleAutoPlay()">▶️ Tự Động</button>
+        </div>
+        
+        <div class="info">
+            <div>Nước đi: <span class="move-display" id="moveCount">0</span> / <span id="totalMoves">0</span></div>
+            <div id="currentMove" style="margin-top: 10px; color: #764ba2;"></div>
+        </div>
+    </div>
+
+    <script>
+        const pieces = {
+            '車': 'red', '馬': 'red', '象': 'red', '士': 'red', '將': 'red',
+            '炮': 'red', '兵': 'red',
+            '车': 'black', '马': 'black', '相': 'black', '仕': 'black', '帅': 'black',
+            '砲': 'black', '卒': 'black'
+        };
+        
+        // Thiết lập ván đấu mẫu - Pháo Đầu Trận
+        // Tọa độ: [hàng, cột] - Đỏ ở dưới (hàng 9), Đen ở trên (hàng 0)
+        const moves = [
+            {from: [7, 7], to: [0, 7], piece: '炮', color: 'red', desc: 'Đỏ: Pháo 8 tiến 2'},
+        ];
+        
+        let initialBoard = [
+            ['车','马','相','仕','帅','仕','相','马','车'],
+            ['','','','','','','','',''],
+            ['','砲','','','','','','砲',''],
+            ['卒','','卒','','卒','','卒','','卒'],
+            ['','','','','','','','',''],
+            ['','','','','','','','',''],
+            ['兵','','兵','','兵','','兵','','兵'],
+            ['','炮','','','','','','炮',''],
+            ['','','','','','','','',''],
+            ['車','馬','象','士','將','士','象','馬','車']
+        ];
+        
+        let currentBoard = JSON.parse(JSON.stringify(initialBoard));
+        let currentMoveIndex = 0;
+        let autoPlayInterval = null;
+        
+        function createBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+            
+            for (let row = 0; row < 10; row++) {
+                for (let col = 0; col < 9; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    
+                    const piece = currentBoard[row][col];
+                    if (piece) {
+                        const pieceDiv = document.createElement('div');
+                        pieceDiv.className = `piece ${pieces[piece]}`;
+                        pieceDiv.textContent = piece;
+                        cell.appendChild(pieceDiv);
+                    }
+                    
+                    board.appendChild(cell);
+                }
+            }
+            
+            document.getElementById('totalMoves').textContent = moves.length;
+        }
+        
+        function nextMove() {
+            if (currentMoveIndex >= moves.length) return;
+            
+            const move = moves[currentMoveIndex];
+            const [fromRow, fromCol] = move.from;
+            const [toRow, toCol] = move.to;
+            
+            currentBoard[toRow][toCol] = currentBoard[fromRow][fromCol];
+            currentBoard[fromRow][fromCol] = '';
+            
+            currentMoveIndex++;
+            updateDisplay();
+            createBoard();
+            
+            document.getElementById('prevBtn').disabled = false;
+            if (currentMoveIndex >= moves.length) {
+                document.getElementById('nextBtn').disabled = true;
+                stopAutoPlay();
+            }
+        }
+        
+        function previousMove() {
+            if (currentMoveIndex <= 0) return;
+            
+            currentMoveIndex--;
+            const move = moves[currentMoveIndex];
+            const [fromRow, fromCol] = move.from;
+            const [toRow, toCol] = move.to;
+            
+            currentBoard[fromRow][fromCol] = currentBoard[toRow][toCol];
+            currentBoard[toRow][toCol] = '';
+            
+            updateDisplay();
+            createBoard();
+            
+            document.getElementById('nextBtn').disabled = false;
+            if (currentMoveIndex <= 0) {
+                document.getElementById('prevBtn').disabled = true;
+            }
+        }
+        
+        function resetGame() {
+            currentBoard = JSON.parse(JSON.stringify(initialBoard));
+            currentMoveIndex = 0;
+            stopAutoPlay();
+            updateDisplay();
+            createBoard();
+            document.getElementById('prevBtn').disabled = true;
+            document.getElementById('nextBtn').disabled = false;
+        }
+        
+        function toggleAutoPlay() {
+            if (autoPlayInterval) {
+                stopAutoPlay();
+            } else {
+                startAutoPlay();
+            }
+        }
+        
+        function startAutoPlay() {
+            document.getElementById('playBtn').textContent = '⏸️ Tạm Dừng';
+            autoPlayInterval = setInterval(() => {
+                if (currentMoveIndex >= moves.length) {
+                    stopAutoPlay();
+                } else {
+                    nextMove();
+                }
+            }, 1500);
+        }
+        
+        function stopAutoPlay() {
+            if (autoPlayInterval) {
+                clearInterval(autoPlayInterval);
+                autoPlayInterval = null;
+                document.getElementById('playBtn').textContent = '▶️ Tự Động';
+            }
+        }
+        
+        function updateDisplay() {
+            document.getElementById('moveCount').textContent = currentMoveIndex;
+            const currentMoveDiv = document.getElementById('currentMove');
+            if (currentMoveIndex > 0) {
+                currentMoveDiv.textContent = moves[currentMoveIndex - 1].desc;
+            } else {
+                currentMoveDiv.textContent = 'Trạng thái ban đầu';
+            }
+        }
+        
+        // Khởi tạo bàn cờ
+        createBoard();
+        updateDisplay();
+    </script>
+</body>
+</html>
