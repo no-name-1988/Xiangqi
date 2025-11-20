@@ -165,7 +165,11 @@
         // Thiết lập ván đấu mẫu - Pháo Đầu Trận
         // Tọa độ: [hàng, cột] - Đỏ ở dưới (hàng 9), Đen ở trên (hàng 0)
         const moves = [
-            {from: [7, 7], to: [0, 7], piece: '炮', color: 'red', desc: 'Đỏ: Pháo 8 tiến 2'},
+            {from: [7, 7], to: [0, 7], piece: '炮', color: 'red', desc: 'Đỏ: Pháo ăn Mã'},
+            {from: [0, 8], to: [0, 7], piece: '车', color: 'black', desc: 'Đen: Xe ăn lại Pháo'},
+            {from: [7, 1], to: [0, 1], piece: '炮', color: 'red', desc: 'Đỏ: Pháo cánh trái ăn Mã cánh trái'},
+            {from: [0, 0], to: [0, 1], piece: '车', color: 'black', desc: 'Đen: Xe cánh trái ăn Pháo cánh trái'},
+            {from: [9, 7], to: [7, 6], piece: '馬', color: 'red', desc: 'Đỏ: Mã cánh phải lên'},
         ];
         
         let initialBoard = [
